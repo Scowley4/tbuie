@@ -8,11 +8,16 @@ app = flask.Flask(__name__, static_url_path='')
 
 train_size = 1000
 
-corpus = ankura.corpus.newsgroups()
-Q = ankura.anchor.build_cooccurrence(corpus)
-gs_anchor_indices = ankura.anchor.gram_schmidt_anchors(corpus, Q, 20, return_indices=True)
-gs_anchor_vectors = Q[gs_anchor_indices]
-gs_anchor_tokens = [[corpus.vocabulary[index]] for index in gs_anchor_indices]
+@ankura.util.pickle_cache('newsgroups.pickle')
+def load_data():
+    corpus = ankura.corpus.newsgroups()
+    Q = ankura.anchor.build_cooccurrence(corpus)
+    gs_anchor_indices = ankura.anchor.gram_schmidt_anchors(corpus, Q, 20, return_indices=True)
+    gs_anchor_vectors = Q[gs_anchor_indices]
+    gs_anchor_tokens = [[corpus.vocabulary[index]] for index in gs_anchor_indices]
+    return corpus, Q, gs_anchor_vectors, gs_anchor_tokens
+
+corpus, Q, gs_anchor_vectors, gs_anchor_tokens = load_data()
 
 @app.route('/')
 def serve_itm():
@@ -44,8 +49,7 @@ def topic_request():
                          topics=topic_summary,
                          accuracy=.7522883,
 
-                         examples=[],
-                         single_anchors=False)
+                         examples=[])
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
