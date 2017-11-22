@@ -11,7 +11,7 @@ app.controller('anchorController', function($scope, $timeout, $http) {
   ctrl.finished = false
   ctrl.done = function() {
     if(window.confirm("Are you sure you are done?")) {
-      var data = JSON.stringify(ctrl.anchorsHistory)
+      var data = JSON.stringify(ctrl.anchors)
       $http.post("/finished", data).success(function(data, status) {
         ctrl.finished = true
       })
@@ -91,146 +91,69 @@ app.controller('anchorController', function($scope, $timeout, $http) {
     }
   }
 
+  // This function only gets the topics when we have no current anchors.
+  ctrl.getTopics = function() {
+    ctrl.loading = true
 
-        // This hold previous states, so we can undo/redo
-        ctrl.anchorsHistory = []
+    $.get("/topics", function(data) {
+      ctrl.anchors = getAnchorsArray(data["anchors"], data["topics"])
+      ctrl.setAccuracy(data['accuracy'])
+      ctrl.loading = false
+      $scope.$apply()
+      $(".top-to-bottom").css("height", $(".anchors-and-topics").height())
+    })
+  }
+  ctrl.getTopics()
 
+  //This function takes all anchors from the left column and gets their new topic words.
+  //  It then updates the page to include the new topic words.
+  ctrl.getNewTopics = function() {
+      var currentAnchors = []
+      if ($(".anchorContainer").length !== 0) {
+          //If needed, this checks if the anchors all only have 1 word
+          $(".anchorContainer").each(function() {
+              //This parses out just the comma-separated anchors from all the html
+              var value = $(this).html().replace(/\s/g, '').replace(/<span[^>]*>/g, '').replace(/<\/span><\/span>/g, ',')
+              value = value.replace(/<!--[^>]*>/g, '').replace(/,$/, '').replace(/,$/, '').replace(/\u2716/g, '')
+              //This prevents errors on the server if there are '<' or '>' symbols in the anchors
+              value = value.replace(/\&lt;/g, '<').replace(/\&gt;/g, '>')
+              if (value === "") {
+                  return true
+              }
+              var tempArray = value.split(",")
+              currentAnchors.push(tempArray)
+          })
 
-        // This tells us where we are in anchorsHistory
-        ctrl.historyIndex = 0
+          if (currentAnchors.length !== 0) {
 
+              var getParams = JSON.stringify(currentAnchors)
 
-        //This function only gets the topics when we have no current anchors.
-        ctrl.getTopics = function(getNewExampleDoc) {
+              ctrl.loading = true
 
-            ctrl.loading = true
-
-            var exampleDocName = ctrl.exampleDoc
-            if (getNewExampleDoc) { exampleDocName = '' }
-
-            $.get("/topics", {example: exampleDocName}, function(data) {
-                //Ensure we can't redo something that's been written over
-                ctrl.anchorsHistory.splice(ctrl.historyIndex, ctrl.anchorsHistory.length-ctrl.historyIndex-1)
-                //Save the data
-                console.log(data)
-                ctrl.anchorsHistory.push(data)
-                ctrl.anchors = getAnchorsArray(data["anchors"], data["topics"])
-                ctrl.documents = data['examples']
-                ctrl.setAccuracy(data['accuracy'])
-                ctrl.loading = false
-                $scope.$apply()
-                $(".top-to-bottom").css("height", $(".anchors-and-topics").height())
-            })
-        }
-
-
-        //We actually call the above function here, so we get the original topics
-        ctrl.getTopics(true)
-
-
-        //This function takes all anchors from the left column and gets their new topic words.
-        //  It then updates the page to include the new topic words.
-        //  getNewExampleDoc should be a bool
-        ctrl.getNewTopics = function(getNewExampleDoc) {
-
-            var currentAnchors = []
-            //The server throws an error if there are no anchors,
-            //  so we want to get new anchors if needed.
-            if ($(".anchorContainer").length !== 0) {
-                //If needed, this checks if the anchors all only have 1 word
-                $(".anchorContainer").each(function() {
-                    //This parses out just the comma-separated anchors from all the html
-                    var value = $(this).html().replace(/\s/g, '').replace(/<span[^>]*>/g, '').replace(/<\/span><\/span>/g, ',')
-                    value = value.replace(/<!--[^>]*>/g, '').replace(/,$/, '').replace(/,$/, '').replace(/\u2716/g, '')
-                    //This prevents errors on the server if there are '<' or '>' symbols in the anchors
-                    value = value.replace(/\&lt;/g, '<').replace(/\&gt;/g, '>')
-                    if (value === "") {
-                        return true
-                    }
-                    var tempArray = value.split(",")
-                    currentAnchors.push(tempArray)
-                })
-
-                if (currentAnchors.length !== 0) {
-
-                    var getParams = JSON.stringify(currentAnchors)
-
-                    ctrl.loading = true
-
-                    var exampleParam = ctrl.exampleDoc
-                    if (getNewExampleDoc) {exampleParam = ''}
-
-                    $.get("/topics", {anchors: getParams, example: exampleParam}, function(data) {
-                        var saveState = {anchors: currentAnchors,
+              $.get("/topics", {anchors: getParams}, function(data) {
+                  var saveState = {anchors: currentAnchors,
                                    topics: data["topics"]}
-                        //This gets rid of the possibility of redoing if another state was saved since the last undo. If nothing has been undone, this should do nothing.
-                        ctrl.anchorsHistory.splice(ctrl.historyIndex+1, ctrl.anchorsHistory.length-ctrl.historyIndex-1)
-                        //Increment historyIndex
-                        ctrl.historyIndex += 1
-                        //Save the current state (anchors and topic words)
-                        ctrl.anchorsHistory.push(saveState)
-                        //Update the anchors in the UI
-                        ctrl.anchors = getAnchorsArray(currentAnchors, data["topics"])
-                        ctrl.documents = data['examples']
-                        //ctrl.getExampleDocuments(data['example'])
-                        //ctrl.exampleDoc = data['example_name']
-                        ctrl.setAccuracy(data['accuracy'])
-                        ctrl.loading = false
-                        $scope.$apply()
-                        // Sets the height of the document container
-                        $(".top-to-bottom").css("height", $(".anchors-and-topics").height())
-                    })
-                }
-
-                else {
-                    ctrl.getTopics(getNewExampleDoc)
-                }
-            }
-
-            //This gets new anchors if we need them.
-            else {
-                ctrl.getTopics(getNewExampleDoc)
-            }
-
-        }
+                  //Update the anchors in the UI
+                  ctrl.anchors = getAnchorsArray(currentAnchors, data["topics"])
+                  ctrl.setAccuracy(data['accuracy'])
+                  ctrl.loading = false
+                  $scope.$apply()
+                  // Sets the height of the document container
+                  $(".top-to-bottom").css("height", $(".anchors-and-topics").height())
+              })
+          } else {
+              ctrl.getTopics()
+          }
+      } else {
+          ctrl.getTopics()
+      }
+  }
 
 
         // This sets the height of the document container on load
         $timeout(function() {
           $(".top-to-bottom").css("height", $(".anchors-and-topics").height())
         }, 50)
-
-
-        // Holds all of the sample documents we were given organized by topic
-        ctrl.documents
-
-
-//        // Holds a map from document to topics it includes
-//        ctrl.docToTopicList
-
-
-//        // Holds the directory for the current example document
-//        ctrl.exampleDoc
-
-
-//        // Holds a map from topic to documents that include it
-//        ctrl.topicToDocList
-
-
-//        // Gets example documents to display on the right-hand side
-//        ctrl.getExampleDocuments = function getExampleDocuments(exampleDocs) {
-//          ctrl.documents = exampleDocs
-//          ctrl.topicToDocList = []
-//          for (var i = 0; i < ctrl.documents.length; i++) {
-//            for (var j = 0; j < ctrl.documents[i]['topics'].length; j++) {
-//              if (ctrl.topicToDocList[ctrl.documents[i]['topics'][j]] === undefined) {
-//                ctrl.topicToDocList[ctrl.documents[i]['topics'][j]] = []
-//                ctrl.topicToDocList[ctrl.documents[i]['topics'][j]].push(i)
-//              }
-//              else { ctrl.topicToDocList[ctrl.documents[i]['topics'][j]].push(i) }
-//            }
-//          }
-//        }
 
 
         ctrl.setAccuracy = function setAccuracy(accuracy) {
@@ -247,13 +170,6 @@ app.controller('anchorController', function($scope, $timeout, $http) {
 
         ctrl.topicDocuments = []
 
-
-        // Called when the "show-docs-button" is clicked, which should
-        //   get documents that relate to this topic
-        ctrl.getRelatedDocuments = function getRelatedDocuments(index) {
-          ctrl.topicDocuments = ctrl.documents[index]
-          ctrl.showSampleDocuments = true
-        }
 
         ctrl.popoverIfDisabled = function(index) {
             var selector = "#show-docs-button-" + index
@@ -342,44 +258,14 @@ app.directive("autocomplete", function() {
   }
 })
 
-// app.directive('tooltip', function () {
-//     return {
-//         restrict:'A',
-//         link: function(scope, element, attrs)
-//         {
-//             var pop = {
-//                     placement:'bottom',
-//                     trigger:'manual',
-//                     html:true,
-//                     content:'You found Me!'
-//                 }
-//             var parent = $(element).parent()
-//             parent.popover(pop)
-//             $(element).onmouseover = function () {
-//                 console.log("disabled", element.disabled)
-//                 if (element.disabled)
-//                 {
-//                     $(parent).popover('show')
-//                 }
-//             }
-//             console.log("parent", parent)
-//             scope.$apply()
-//         }
-//     }
-// })
-
-//This function returns an array of anchor objects from arrays of anchors and topics.
-//Anchor objects hold both anchor words and topic words related to the anchor words.
+// Converts separate anchor and topic word lists into an array of anchor objects.
 var getAnchorsArray = function(anchors, topics) {
-    var tempAnchors = []
+    var result = []
     for (var i = 0; i < anchors.length; i++) {
-        anchor = anchors[i]
-        var topic = topics[i]
-        tempAnchors.push({"anchors":anchor, "topic":topic})
+        result.push({"anchors": anchors[i], "topic": topics[i]})
     }
-    return tempAnchors
+    return result
 }
-
 
 //All functions below here enable dragging and dropping
 //They could possibly be in another file and included?

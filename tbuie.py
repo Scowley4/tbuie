@@ -29,7 +29,8 @@ def get_vocab():
 
 @app.route('/finished', methods=['GET', 'POST'])
 def finish():
-    print('finished')
+    print(flask.request.get_json())
+    return 'OK'
 
 
 @app.route('/topics')
@@ -47,9 +48,7 @@ def topic_request():
 
     return flask.jsonify(anchors=anchor_tokens,
                          topics=topic_summary,
-                         accuracy=.7522883,
-
-                         examples=[])
+                         accuracy=.7522883)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
