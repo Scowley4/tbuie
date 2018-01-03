@@ -1,4 +1,5 @@
 var app = angular.module('anchorApp', [])
+
 app.controller('anchorController', function($scope, $timeout, $http) {
   var ctrl = this
 
@@ -91,131 +92,57 @@ app.controller('anchorController', function($scope, $timeout, $http) {
     }
   }
 
-  // This function only gets the topics when we have no current anchors.
-  ctrl.getTopics = function() {
-    ctrl.loading = true
-
-    $.get("/topics", function(data) {
-      ctrl.anchors = getAnchorsArray(data["anchors"], data["topics"])
-      ctrl.setAccuracy(data['accuracy'])
-      ctrl.loading = false
-      $scope.$apply()
-      $(".top-to-bottom").css("height", $(".anchors-and-topics").height())
-    })
-  }
-  ctrl.getTopics()
-
-  //This function takes all anchors from the left column and gets their new topic words.
-  //  It then updates the page to include the new topic words.
   ctrl.getNewTopics = function() {
-      var currentAnchors = []
-      if ($(".anchorContainer").length !== 0) {
-          //If needed, this checks if the anchors all only have 1 word
-          $(".anchorContainer").each(function() {
-              //This parses out just the comma-separated anchors from all the html
-              var value = $(this).html().replace(/\s/g, '').replace(/<span[^>]*>/g, '').replace(/<\/span><\/span>/g, ',')
-              value = value.replace(/<!--[^>]*>/g, '').replace(/,$/, '').replace(/,$/, '').replace(/\u2716/g, '')
-              //This prevents errors on the server if there are '<' or '>' symbols in the anchors
-              value = value.replace(/\&lt;/g, '<').replace(/\&gt;/g, '>')
-              if (value === "") {
-                  return true
-              }
-              var tempArray = value.split(",")
-              currentAnchors.push(tempArray)
-          })
-
-          if (currentAnchors.length !== 0) {
-
-              var getParams = JSON.stringify(currentAnchors)
-
-              ctrl.loading = true
-
-              $.get("/topics", {anchors: getParams}, function(data) {
-                  var saveState = {anchors: currentAnchors,
-                                   topics: data["topics"]}
-                  //Update the anchors in the UI
-                  ctrl.anchors = getAnchorsArray(currentAnchors, data["topics"])
-                  ctrl.setAccuracy(data['accuracy'])
-                  ctrl.loading = false
-                  $scope.$apply()
-                  // Sets the height of the document container
-                  $(".top-to-bottom").css("height", $(".anchors-and-topics").height())
-              })
-          } else {
-              ctrl.getTopics()
-          }
-      } else {
-          ctrl.getTopics()
-      }
-  }
-
-
-        // This sets the height of the document container on load
-        $timeout(function() {
-          $(".top-to-bottom").css("height", $(".anchors-and-topics").height())
-        }, 50)
-
-
-        ctrl.setAccuracy = function setAccuracy(accuracy) {
-          if (!accuracy) {
-            $('#accuracyHolder').text('No accuracy yet')
-          }
-          else {
-            ctrl.classifierAccuracy = accuracy
-            $('#accuracyHolder').text('Accuracy: ' + (accuracy*100).toFixed(2) + '%')
-          }
-        }
-
-        ctrl.showSampleDocuments = false
-
-        ctrl.topicDocuments = []
-
-
-        ctrl.popoverIfDisabled = function(index) {
-            var selector = "#show-docs-button-" + index
-            var btn = $(selector)
-            var disabled = btn.prop('disabled')
-            var anyOpen = false
-            $("[id^=show-docs-button-]").each(function() {
-                var pop = $(this).parent().data('bs.popover')
-                if (pop !== undefined)
-                {
-                    anyOpen = pop.tip().hasClass('in')
-                }
-            })
-            btn.popover()
-            if (disabled && !anyOpen) {
-                var parent = btn.parent()
-                parent.popover({
-                    placement: 'bottom',
-                    trigger: 'manual',
-                    html: true,
-                    content: 'Click "Update Topics" to sample new documents.'
-                }).popover('show')
-                $timeout(function() {
-                    ctrl.closePopover(index)
-                }, 3000)
-            }
-        }
-
-      ctrl.closePopover = function closePopover(index) {
-          var selector = "#show-docs-button-" + index
-          var coke = $(selector)
-          coke.parent().popover('destroy')
-      }
-
-
-    }).directive("autofillfix", function() {
-        //This is required because of some problem between Angular and autofill
-        return {
-            require: "ngModel",
-            link: function(scope, element, attrs, ngModel) {
-                scope.$on("autofillfix:update", function() {
-                    ngModel.$setViewValue(element.val())
-                })
-            }
+    var currentAnchors = []
+    $(".anchorContainer").each(function() {
+      // Parse out the comma-separated anchors from all the html
+      var value = $(this).html().replace(/\s/g, '').replace(/<span[^>]*>/g, '').replace(/<\/span><\/span>/g, ',')
+        value = value.replace(/<!--[^>]*>/g, '').replace(/,$/, '').replace(/,$/, '').replace(/\u2716/g, '')
+        value = value.replace(/\&lt;/g, '<').replace(/\&gt;/g, '>')
+        if (value !== "") {
+          currentAnchors.push(value.split(","))
         }
     })
+
+    ctrl.loading = true
+    if (currentAnchors.length !== 0) {
+      $.get("/topics", {anchors: JSON.stringify(currentAnchors)}, function(data) {
+        ctrl.anchors = getAnchorsArray(data["anchors"], data["topics"])
+        ctrl.setAccuracy(data['accuracy'])
+        ctrl.loading = false
+        $scope.$apply()
+        $(".top-to-bottom").css("height", $(".anchors-and-topics").height())
+      })
+    } else {
+      $.get("/topics", function(data) {
+        ctrl.anchors = getAnchorsArray(data["anchors"], data["topics"])
+        ctrl.setAccuracy(data['accuracy'])
+        ctrl.loading = false
+        $scope.$apply()
+        $(".top-to-bottom").css("height", $(".anchors-and-topics").height())
+      })
+    }
+  }
+  ctrl.getNewTopics()
+
+  ctrl.setAccuracy = function setAccuracy(accuracy) {
+    ctrl.classifierAccuracy = accuracy
+    $('#accuracyHolder').text('Accuracy: ' + (accuracy*100).toFixed(2) + '%')
+  }
+
+})
+
+app.directive("autofillfix", function() {
+  //This is required because of some problem between Angular and autofill
+  return {
+    require: "ngModel",
+    link: function(scope, element, attrs, ngModel) {
+      scope.$on("autofillfix:update", function() {
+      ngModel.$setViewValue(element.val())
+      })
+    }
+  }
+})
 
 app.directive("autocomplete", function() {
   return {
@@ -268,90 +195,83 @@ var getAnchorsArray = function(anchors, topics) {
 }
 
 //All functions below here enable dragging and dropping
-//They could possibly be in another file and included?
-
 
 var allowDrop = function(ev) {
-    ev.preventDefault()
+  ev.preventDefault()
 }
-
 
 var drag = function(ev) {
-    ev.dataTransfer.setData("text", ev.target.id)
+  ev.dataTransfer.setData("text", ev.target.id)
 }
-
 
 //Holds next id for when we copy nodes
 var copyId = 0
 
-
 var drop = function(ev) {
-    ev.preventDefault()
-    var data = ev.dataTransfer.getData("text")
-    var dataString = JSON.stringify(data)
-    //If an anchor or a copy of a topic word, drop
-    if (dataString.indexOf("anchor") !== -1 || dataString.indexOf("copy") !== -1) {
-        //Need to cover all the possible places in the main div it could be dropped
-        if($(ev.target).hasClass( "droppable" )) {
-            ev.target.appendChild(document.getElementById(data))
-        }
-        else if($(ev.target).hasClass( "draggable" )) {
-            $(ev.target).parent()[0].appendChild(document.getElementById(data))
-        }
-        else if($(ev.target).hasClass( "anchorInputContainer" )) {
-            $(ev.target).siblings(".anchorContainer")[0].appendChild(document.getElementById(data))
-        }
-        else if ($(ev.target).hasClass( "anchorInput" )) {
-            $(ev.target).parent().parent().siblings(".anchorContainer")[0].appendChild(document.getElementById(data))
-        }
-        else if ($(ev.target).hasClass( "anchor" )) {
-            $(ev.target).children(".anchorContainer")[0].appendChild(document.getElementById(data))
-        }
+  ev.preventDefault()
+  var data = ev.dataTransfer.getData("text")
+  var dataString = JSON.stringify(data)
+  //If an anchor or a copy of a topic word, drop
+  if (dataString.indexOf("anchor") !== -1 || dataString.indexOf("copy") !== -1) {
+    //Need to cover all the possible places in the main div it could be dropped
+    if($(ev.target).hasClass( "droppable" )) {
+        ev.target.appendChild(document.getElementById(data))
     }
-    //If a topic word, copy it
-    else {
-        var nodeCopy = document.getElementById(data).cloneNode(true)
-        nodeCopy.id = data + "copy" + copyId++
-        var closeButton = addDeleteButton(nodeCopy.id + "close")
-        nodeCopy.appendChild(closeButton)
-        //Need to cover all the possible places in the main div it could be dropped
-        if($(ev.target).hasClass( "droppable" )) {
-            ev.target.appendChild(nodeCopy)
-        }
-        else if($(ev.target).hasClass( "draggable" )) {
-            $(ev.target).parent()[0].appendChild(nodeCopy)
-        }
-        else if($(ev.target).hasClass( "anchorInputContainer" )) {
-            $(ev.target).siblings(".anchorContainer")[0].appendChild(nodeCopy)
-        }
-        else if ($(ev.target).hasClass( "anchorInput" )) {
-            $(ev.target).parent().parent().siblings(".anchorContainer")[0].appendChild(nodeCopy)
-        }
-        else if ($(ev.target).hasClass( "anchor" )) {
-            $(ev.target).children(".anchorContainer")[0].appendChild(nodeCopy)
-        }
+    else if($(ev.target).hasClass( "draggable" )) {
+        $(ev.target).parent()[0].appendChild(document.getElementById(data))
     }
+    else if($(ev.target).hasClass( "anchorInputContainer" )) {
+        $(ev.target).siblings(".anchorContainer")[0].appendChild(document.getElementById(data))
+    }
+    else if ($(ev.target).hasClass( "anchorInput" )) {
+        $(ev.target).parent().parent().siblings(".anchorContainer")[0].appendChild(document.getElementById(data))
+    }
+    else if ($(ev.target).hasClass( "anchor" )) {
+        $(ev.target).children(".anchorContainer")[0].appendChild(document.getElementById(data))
+    }
+  }
+  //If a topic word, copy it
+  else {
+    var nodeCopy = document.getElementById(data).cloneNode(true)
+    nodeCopy.id = data + "copy" + copyId++
+    var closeButton = addDeleteButton(nodeCopy.id + "close")
+    nodeCopy.appendChild(closeButton)
+    //Need to cover all the possible places in the main div it could be dropped
+    if($(ev.target).hasClass( "droppable" )) {
+        ev.target.appendChild(nodeCopy)
+    }
+    else if($(ev.target).hasClass( "draggable" )) {
+        $(ev.target).parent()[0].appendChild(nodeCopy)
+    }
+    else if($(ev.target).hasClass( "anchorInputContainer" )) {
+        $(ev.target).siblings(".anchorContainer")[0].appendChild(nodeCopy)
+    }
+    else if ($(ev.target).hasClass( "anchorInput" )) {
+        $(ev.target).parent().parent().siblings(".anchorContainer")[0].appendChild(nodeCopy)
+    }
+    else if ($(ev.target).hasClass( "anchor" )) {
+        $(ev.target).children(".anchorContainer")[0].appendChild(nodeCopy)
+    }
+  }
 }
-
 
 //used to delete words that are copies (because they can't access the function in the Angular scope)
 var deleteWord = function(ev) {
-    $("#"+ev.target.id).parent()[0].remove()
+  $("#"+ev.target.id).parent()[0].remove()
 }
-
 
 //Adds a delete button (little 'x' on the right side) of an anchor word
 var addDeleteButton = function(id) {
-    var closeButton = document.createElement("span")
-    closeButton.innerHTML = " &#10006"
-    var closeClass = document.createAttribute("class")
-    closeClass.value = "close"
-    closeButton.setAttributeNode(closeClass)
-    var closeId = document.createAttribute("id")
-    closeId.value = id
-    closeButton.setAttributeNode(closeId)
-    var closeClick = document.createAttribute("onclick")
-    closeClick.value = "deleteWord(event)"
-    closeButton.setAttributeNode(closeClick)
-    return closeButton
+  var closeButton = document.createElement("span")
+  closeButton.innerHTML = " &#10006"
+  var closeClass = document.createAttribute("class")
+  closeClass.value = "close"
+  closeButton.setAttributeNode(closeClass)
+  var closeId = document.createAttribute("id")
+  closeId.value = id
+  closeButton.setAttributeNode(closeId)
+  var closeClick = document.createAttribute("onclick")
+  closeClick.value = "deleteWord(event)"
+  closeButton.setAttributeNode(closeClick)
+  return closeButton
 }
