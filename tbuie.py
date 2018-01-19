@@ -63,7 +63,7 @@ def topic_request():
         contingency[gold, pred] += 1
 
     return flask.jsonify(anchors=anchor_tokens,
-                         topics=topic_summary,
+                         topics=topic_summary.tolist(),
                          accuracy=contingency.accuracy())
 
 if __name__ == '__main__':
