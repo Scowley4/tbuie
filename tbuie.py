@@ -12,59 +12,23 @@ import tempfile
 
 app = flask.Flask(__name__, static_url_path='')
 
+dataset_name = sys.argv[1]
+
 train_size = 10000
 test_size = 500
 number_of_topics = 50
 label_weight = 1
 smoothing = 0
-attr_name = ''
 
-def split_train_test(num_docs, train_size=10000, test_size=200):
-    shuffled_doc_ids = list(range(num_docs))
-    random.shuffle(shuffled_doc_ids)
-    return shuffled_doc_ids[:train_size], set(shuffled_doc_ids[train_size:train_size+test_size])
-
-print(sys.argv[1])
-#@ankura.util.pickle_cache(f'newsgroups_train{train_size}_test{test_size}_k{number_of_topics}_lw{label_weight}_smoothing{smoothing}.pickle')
-def load_data(corpus_name):
-    print('***Getting the corpus')
-    if corpus_name == 'newsgroups':
-        attr_name = 'coarse_newsgroup'
-        corpus = ankura.corpus.newsgroups()
-
-    elif corpus_name == 'yelp':
-        attr_name = 'label'
-        corpus = ankura.corpus.yelp()
-
-    elif corpus_name == 'tripadvisor':
-        attr_name = 'label'
-        corpus = ankura.corpus.tripadvisor()
-
-    else:
-        raise ValueError(f'Corpus: {corpus_name} unrecognized.')
-
-    print('***Splitting Corpus')
-    split = ankura.pipeline.test_train_split(corpus, num_train=train_size, num_test=test_size, return_ids=True)
-    (train_ids, train_corpus), (test_ids, test_corpus) = split
-
-    print('***Building Labeled Cooccurrence')
-    Q, labels = ankura.anchor.build_labeled_cooccurrence(corpus, attr_name, train_ids,
-                                                        label_weight=label_weight, smoothing=smoothing)
-
-    print('***Performing Gram-Schmidt')
-    gs_anchor_indices = ankura.anchor.gram_schmidt_anchors(corpus, Q, k=number_of_topics, return_indices=True)
-
-    gs_anchor_vectors = Q[gs_anchor_indices]
-    gs_anchor_tokens = [[corpus.vocabulary[index]] for index in gs_anchor_indices]
-    return corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens
-
-
-
+if sys.argv[1]=='newsgroups':
+    attr_name = 'coarse_newsgroup'
+elif sys.argv[1]=='yelp':
+    attr_name = 'binary_rating'
+elif sys.argv[1]=='tripadvisor':
+    attr_name = 'label'
 
 @ankura.util.pickle_cache(f'newsgroups_train{train_size}_test{test_size}_k{number_of_topics}_lw{label_weight}_smoothing{smoothing}.pickle')
 def load_newsgroups_data():
-    global attr_name
-    attr_name = 'coarse_newsgroup'
     print('***Getting the corpus')
     corpus = ankura.corpus.newsgroups()
 
@@ -80,17 +44,9 @@ def load_newsgroups_data():
     gs_anchor_tokens = [[corpus.vocabulary[index]] for index in gs_anchor_indices]
     return corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens
 
-if sys.argv[1]=='newsgroups':
-    attr_name = 'coarse_newsgroup'
-    start = time.time()
-    corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens = load_newsgroups_data()
-    if time.time()-start<5:
-        print('***Loaded the newsgroups pickle cache')
 
 @ankura.util.pickle_cache(f'yelp_train{train_size}_test{test_size}_k{number_of_topics}_lw{label_weight}_smoothing{smoothing}.pickle')
 def load_yelp_data():
-    global attr_name
-    attr_name = 'label'
     print('***Getting the corpus')
     corpus = ankura.corpus.yelp()
 
@@ -106,17 +62,9 @@ def load_yelp_data():
     gs_anchor_tokens = [[corpus.vocabulary[index]] for index in gs_anchor_indices]
     return corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens
 
-if sys.argv[1]=='yelp':
-    attr_name = 'label'
-    start = time.time()
-    corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens = load_yelp_data()
-    if time.time()-start<5:
-        print('***Loaded the yelp pickle cache')
 
 @ankura.util.pickle_cache(f'tripadvisor_train{train_size}_test{test_size}_k{number_of_topics}_lw{label_weight}_smoothing{smoothing}.pickle')
 def load_tripadvisor_data():
-    global attr_name
-    attr_name = 'label'
     print('***Getting the corpus')
     corpus = ankura.corpus.tripadvisor()
 
@@ -135,14 +83,13 @@ def load_tripadvisor_data():
     gs_anchor_tokens = [[corpus.vocabulary[index]] for index in gs_anchor_indices]
     return corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens
 
-if sys.argv[1]=='tripadvisor':
-    attr_name = 'label'
-    start = time.time()
-    print('Load Tripadvisor')
-    corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens = load_tripadvisor_data()
-    if time.time()-start<5:
-        print('***Loaded the tripadvisor pickle cache')
 
+if sys.argv[1]=='newsgroups':
+    corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens = load_newsgroups_data()
+elif sys.argv[1]=='yelp':
+    corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens = load_yelp_data()
+elif sys.argv[1]=='tripadvisor':
+    corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens = load_tripadvisor_data()
 
 
 @app.route('/')
@@ -153,17 +100,16 @@ def serve_itm():
 def get_vocab():
     return flask.jsonify(vocab=corpus.vocabulary)
 
-def ensure_dir(dirname):
-    try:
-        os.makedirs(dirname)
-    except FileExistsError:
-        pass
-
 @app.route('/finished', methods=['GET', 'POST'])
 def finish():
     data = flask.request.get_json()
+
     directory = os.path.join('FinalAnchors', sys.argv[1])
-    ensure_dir(directory)
+    try:
+        os.makedirs(directory)
+    except FileExistsError:
+        pass
+
     pickle.dump(data, tempfile.NamedTemporaryFile(mode='wb', delete=False,
                                                   prefix=sys.argv[1],
                                                   suffix='.pickle',
@@ -173,8 +119,6 @@ def finish():
 
 @app.route('/topics')
 def topic_request():
-    global attr_name
-    print(attr_name)
     raw_anchors = flask.request.args.get('anchors')
 
     start=time.time()
