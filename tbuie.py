@@ -19,13 +19,12 @@ def split_train_test(num_docs, train_size=10000, test_size=200):
     return shuffled_doc_ids[:train_size], set(shuffled_doc_ids[train_size:train_size+test_size])
 
 @ankura.util.pickle_cache('newsgroups_train10000_test2000_k50_lw1_smoothing0.pickle')
-def load_data():
+def load_newsgroups_data():
     train_size = 10000
     test_size = 2000
     number_of_topics = 50
     label_weight = 1
     smoothing = 0
-
 
     print('***Getting the corpus')
     corpus = ankura.corpus.newsgroups()
@@ -42,10 +41,70 @@ def load_data():
     gs_anchor_tokens = [[corpus.vocabulary[index]] for index in gs_anchor_indices]
     return corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens
 
-start = time.time()
-corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens = load_data()
-if time.time()-start<5:
-    print('***Loaded the pickle cache')
+if sys.argv[1]=='newsgroups':
+    start = time.time()
+    corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens = load_newsgroups_data() if time.time()-start<5:
+        print('***Loaded the newsgroups pickle cache')
+
+@ankura.util.pickle_cache('yelp_train10000_test2000_k50_lw1_smoothing0.pickle')
+def load_yelp_data():
+    train_size = 10000
+    test_size = 2000
+    number_of_topics = 50
+    label_weight = 1
+    smoothing = 0
+
+    print('***Getting the corpus')
+    corpus = ankura.corpus.yelp()
+
+    split = ankura.pipeline.test_train_split(corpus, num_train=train_size, num_test=test_size, return_ids=True)
+    (train_ids, train_corpus), (test_ids, test_corpus) = split
+
+    Q, labels = ankura.anchor.build_labeled_cooccurrence(corpus, attr_name, train_ids,
+                                                        label_weight=label_weight, smoothing=smoothing)
+
+    gs_anchor_indices = ankura.anchor.gram_schmidt_anchors(corpus, Q, k=number_of_topics, return_indices=True)
+
+    gs_anchor_vectors = Q[gs_anchor_indices]
+    gs_anchor_tokens = [[corpus.vocabulary[index]] for index in gs_anchor_indices]
+    return corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens
+
+if sys.argv[1]=='yelp':
+    start = time.time()
+    corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens = load_yelp_data()
+    if time.time()-start<5:
+        print('***Loaded the yelp pickle cache')
+
+@ankura.util.pickle_cache('tripadvisor_train10000_test2000_k50_lw1_smoothing0.pickle')
+def load_tripadvisor_data():
+    train_size = 10000
+    test_size = 2000
+    number_of_topics = 50
+    label_weight = 1
+    smoothing = 0
+
+    print('***Getting the corpus')
+    corpus = ankura.corpus.tripadvisor()
+
+    split = ankura.pipeline.test_train_split(corpus, num_train=train_size, num_test=test_size, return_ids=True)
+    (train_ids, train_corpus), (test_ids, test_corpus) = split
+
+    Q, labels = ankura.anchor.build_labeled_cooccurrence(corpus, attr_name, train_ids,
+                                                        label_weight=label_weight, smoothing=smoothing)
+
+    gs_anchor_indices = ankura.anchor.gram_schmidt_anchors(corpus, Q, k=number_of_topics, return_indices=True)
+
+    gs_anchor_vectors = Q[gs_anchor_indices]
+    gs_anchor_tokens = [[corpus.vocabulary[index]] for index in gs_anchor_indices]
+    return corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens
+
+if sys.argv[1]=='tripadvisor':
+    start = time.time()
+    corpus, Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens = tripadvisor()
+    if time.time()-start<5:
+        print('***Loaded the tripadvisor pickle cache')
+
+
 
 @app.route('/')
 def serve_itm():
