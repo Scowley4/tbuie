@@ -6,6 +6,7 @@ import random
 import os
 import ankura
 import time
+import pickle
 from tqdm import tqdm
 import sys
 import tempfile
@@ -58,6 +59,7 @@ def serve_itm():
 def get_vocab():
     return flask.jsonify(vocab=corpus.vocabulary)
 
+
 @app.route('/finished', methods=['GET', 'POST'])
 def finish():
     data = flask.request.get_json()
@@ -68,10 +70,12 @@ def finish():
     except FileExistsError:
         pass
 
-    pickle.dump(data, tempfile.NamedTemporaryFile(mode='wb', delete=False,
+    pickle.dump(data, tempfile.NamedTemporaryFile(mode='wb',
+                                                  delete=False,
                                                   prefix=sys.argv[1],
                                                   suffix='.pickle',
-                                                  dir=directory))
+                                                  dir=directory,
+    ))
     return 'OK'
 
 
@@ -121,11 +125,12 @@ def topic_request():
         pred = classifier(doc)
         contingency[gold, pred] += 1
     print('***Classify:', time.time()-start)
-    print('*~~Accuracy:', contingency.accuracy())
+    print('***Accuracy:', contingency.accuracy())
 
     return flask.jsonify(anchors=anchor_tokens,
                          topics=topic_summary,
                          accuracy=contingency.accuracy())
+
 
 if __name__ == '__main__':
     if len(sys.argv)>2:
