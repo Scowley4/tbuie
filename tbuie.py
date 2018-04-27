@@ -13,6 +13,8 @@ import tempfile
 
 app = flask.Flask(__name__, static_url_path='')
 
+user_data = list()
+
 dataset_name = sys.argv[1]
 
 train_size = 10000
@@ -62,7 +64,6 @@ def get_vocab():
 
 @app.route('/finished', methods=['GET', 'POST'])
 def finish():
-    data = flask.request.get_json()
 
     directory = os.path.join('FinalAnchors', sys.argv[1])
     try:
@@ -70,14 +71,13 @@ def finish():
     except FileExistsError:
         pass
 
-    pickle.dump(data, tempfile.NamedTemporaryFile(mode='wb',
+    pickle.dump(user_data, tempfile.NamedTemporaryFile(mode='wb',
                                                   delete=False,
                                                   prefix=sys.argv[1],
                                                   suffix='.pickle',
                                                   dir=directory,
     ))
     return 'OK'
-
 
 @app.route('/topics')
 def topic_request():
@@ -116,6 +116,8 @@ def topic_request():
     print('***Classify:', time.time()-start)
     print('***Accuracy:', contingency.accuracy())
 
+    user_data.append((raw_anchors, contingency.accuracy()))
+
     return flask.jsonify(anchors=anchor_tokens,
                          topics=topic_summary,
                          accuracy=contingency.accuracy())
@@ -127,6 +129,3 @@ if __name__ == '__main__':
     else:
         port=5000
     app.run(debug=True, host='0.0.0.0', port=port)
-
-
-
