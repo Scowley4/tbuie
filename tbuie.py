@@ -4,8 +4,7 @@ import json
 import flask
 import random
 import os
-import ankura
-import time
+import ankura import time
 import pickle
 from tqdm import tqdm
 import sys
@@ -116,7 +115,7 @@ def topic_request():
     print('***Classify:', time.time()-start)
     print('***Accuracy:', contingency.accuracy())
 
-    user_data.append((raw_anchors, contingency.accuracy()))
+    user_data.append((anchor_tokens, contingency.accuracy()))
 
     return flask.jsonify(anchors=anchor_tokens,
                          topics=topic_summary,
