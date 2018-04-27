@@ -92,8 +92,6 @@ def topic_request():
     print('***tadem_anchors:', time.time()-start)
 
     start=time.time()
-    # After change to variational assign, this is most time consuming part
-    # (depending on train_corpus size)
     C, topics = ankura.anchor.recover_topics(Q, anchor_vectors, epsilon=1e-5, get_c=True)
     print('C SHAPE :', C.shape)
 
@@ -103,19 +101,10 @@ def topic_request():
     topic_summary = ankura.topic.topic_summary(topics[:len(corpus.vocabulary)], corpus)
     print('***topic_summary:', time.time()-start)
 
-    #print('anchors',anchor_tokens)
-    #print('topics',topic_summary)
-
     start=time.time()
-    #classifier = ankura.topic.free_classifier_revised(topics, Q, labels)
 
     classifier = ankura.topic.free_classifier_dream(corpus, attr_name, labeled_docs=train_ids, topics=topics, C=C, labels=labels)
     print('***Get Classifier:', time.time()-start)
-    start=time.time()
-
-    ankura.topic.variational_assign(test_corpus, topics)
-
-    print('***variational assign:', time.time()-start)
 
     contingency = ankura.validate.Contingency()
 
