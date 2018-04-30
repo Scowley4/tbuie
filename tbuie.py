@@ -39,10 +39,7 @@ elif sys.argv[1]=='amazon':
 
 def calculate_user_data_accuracy(user_data, Q, test_corpus, train_corpus, attr_name):
     for i, data in enumerate(user_data):
-        anchor_tokens = data[0]
-        anchor_indices = [corpus.vocabulary.index(word) for word in anchor_tokens]
-        anchor_vectors = Q[anchor_indices]
-
+        anchor_vectors = ankura.anchor.tandem_anchors(data[0], Q, corpus)
         lr_accuracy = ankura.validate.anchor_accuracy(Q, anchor_vectors, test_corpus, train_corpus, attr_name)
         print('Instance', i, 'Free Classifier Accuracy:', data[1], 'Logistic Regression Accuracy:', lr_accuracy)
 
@@ -132,7 +129,7 @@ def topic_request():
     print('***Classify:', time.time()-start)
     print('***Accuracy:', contingency.accuracy())
 
-    user_data.append(([token[0] for token in anchor_tokens], contingency.accuracy()))
+    user_data.append((anchor_tokens, contingency.accuracy()))
 
     return flask.jsonify(anchors=anchor_tokens,
                          topics=topic_summary,
