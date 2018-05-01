@@ -10,12 +10,29 @@ import pickle
 from tqdm import tqdm
 import sys
 import tempfile
+import argparse
+
+class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
+    pass
+parser=argparse.ArgumentParser(
+    description='Used for hosting tbuie with a given dataset',
+    epilog=('See https://github.com/byu-aml-lab/tbuie\n' +
+            '  and https://github.com/byu-aml-lab/ankura/tree/ankura2/ankura\n' +
+            '  for source and dependencies\n \n'),
+    formatter_class=CustomFormatter)
+parser.add_argument('dataset', metavar='dataset',
+                    choices=['newsgroups', 'yelp', 'tripadvisor', 'amazon'],
+                    help='The name of a dataset to use in this instance of tbuie')
+parser.add_argument('port', nargs='?', default=5000, type=int,
+                    help='Port to be used in hosting the webpage')
+args=parser.parse_args()
+
+dataset_name = args.dataset
+port = args.port
 
 app = flask.Flask(__name__, static_url_path='')
 
 user_data = list()
-
-dataset_name = sys.argv[1]
 
 train_size = 10000
 test_size = 500
@@ -23,20 +40,20 @@ number_of_topics = 50
 label_weight = 1
 smoothing = 0
 
-if sys.argv[1]=='newsgroups':
+if dataset_name == 'newsgroups':
     attr_name = 'coarse_newsgroup'
     corpus = ankura.corpus.newsgroups()
-elif sys.argv[1]=='yelp':
+elif dataset_name == 'yelp':
     attr_name = 'binary_rating'
     corpus = ankura.corpus.yelp()
-elif sys.argv[1]=='tripadvisor':
+elif dataset_name == 'tripadvisor':
     attr_name = 'label'
     corpus = ankura.corpus.tripadvisor()
-elif sys.argv[1]=='amazon':
+elif dataset_name == 'amazon':
     attr_name = 'binary_rating'
     corpus = ankura.corpus.amazon()
 
-@ankura.util.pickle_cache(sys.argv[1] + '.pickle')
+@ankura.util.pickle_cache(dataset_name + '.pickle')
 def load_data():
     split = ankura.pipeline.test_train_split(corpus, num_train=train_size, num_test=test_size, return_ids=True)
     (train_ids, train_corpus), (test_ids, test_corpus) = split
@@ -65,7 +82,7 @@ def get_vocab():
 @app.route('/finished', methods=['GET', 'POST'])
 def finish():
 
-    directory = os.path.join('FinalAnchors', sys.argv[1])
+    directory = os.path.join('FinalAnchors', dataset_name)
     try:
         os.makedirs(directory)
     except FileExistsError:
@@ -73,7 +90,7 @@ def finish():
 
     pickle.dump(user_data, tempfile.NamedTemporaryFile(mode='wb',
                                                   delete=False,
-                                                  prefix=sys.argv[1],
+                                                  prefix=dataset_name,
                                                   suffix='.pickle',
                                                   dir=directory,
     ))
@@ -93,7 +110,6 @@ def topic_request():
 
     start=time.time()
     C, topics = ankura.anchor.recover_topics(Q, anchor_vectors, epsilon=1e-5, get_c=True)
-    print('C SHAPE :', C.shape)
 
     print('***recover_topics:', time.time()-start)
 
@@ -124,8 +140,4 @@ def topic_request():
 
 
 if __name__ == '__main__':
-    if len(sys.argv)>2:
-        port = int(sys.argv[2])
-    else:
-        port=5000
     app.run(debug=True, host='0.0.0.0', port=port)
