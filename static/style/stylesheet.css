@@ -1,3 +1,9 @@
+html{
+  height: 100%;
+}
+body{
+  height: 100%;
+}
 h4 {
     margin-bottom: 5px;
     text-align: center;
@@ -29,7 +35,7 @@ h4 {
 }
 
 .main-container {
-  margin-bottom: 50px;
+  margin-bottom: 100px;
 }
 
 .topic {
@@ -65,7 +71,7 @@ h4 {
 }
 
 .top-to-bottom {
-  //Height is changed in script.js
+  /*Height is changed in script.js*/
 }
 
 .anchor {
@@ -118,16 +124,16 @@ h4 {
 }
 
 .loadingImage {
-    position: absolute;
+    position: fixed;
     display: block;
     left: 45%;
     top: 20%;
 }
 
 .loading {
-    position: absolute;
+    position: fixed;
     width: 100%;
-    height: 150%;
+    height: 100%;
     background-color: rgba(100, 100, 100, 0.4);
     z-index: 1;
 }
@@ -160,6 +166,7 @@ h4 {
 }
 
 #accuracyHolder {
+  display: inline-block;
   margin-top: 10px;
   margin-left: 240px;
 }
@@ -171,10 +178,9 @@ h4 {
 }
 
 #doneForm {
-    margin-left: 200px;
-    margin-top: 40px;
-    float: left;
-    margin-bottom: 20px;
+    margin-top: 5px;
+    margin-right: 5px;
+    float: right;
 }
 
 #updateForm {
