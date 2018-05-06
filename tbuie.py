@@ -10,7 +10,6 @@ import pickle
 from tqdm import tqdm
 import sys
 import tempfile
-import threading
 
 app = flask.Flask(__name__, static_url_path='')
 
@@ -36,14 +35,6 @@ elif sys.argv[1]=='tripadvisor':
 elif sys.argv[1]=='amazon':
     attr_name = 'binary_rating'
     corpus = ankura.corpus.amazon()
-
-def calculate_user_data_accuracy(user_data, Q, test_corpus, train_corpus, attr_name):
-    for i, data in enumerate(user_data):
-        anchor_vectors = ankura.anchor.tandem_anchors(data[0], Q, corpus)
-        lr_accuracy = ankura.validate.anchor_accuracy(Q, anchor_vectors, test_corpus, train_corpus, attr_name)
-        print('Instance', i, 'Free Classifier Accuracy:', data[1], 'Logistic Regression Accuracy:', lr_accuracy)
-
-    return
 
 @ankura.util.pickle_cache(sys.argv[1] + '.pickle')
 def load_data():
@@ -87,9 +78,6 @@ def finish():
                                                   dir=directory,
     ))
 
-    t = threading.Thread(target=calculate_user_data_accuracy, args=(user_data, Q, test_corpus, train_corpus, attr_name,))
-    t.start()
-
     return 'OK'
 
 @app.route('/topics')
@@ -129,7 +117,7 @@ def topic_request():
     print('***Classify:', time.time()-start)
     print('***Accuracy:', contingency.accuracy())
 
-    user_data.append((anchor_tokens, contingency.accuracy()))
+    user_data.append((anchor_vectors, contingency.accuracy()))
 
     return flask.jsonify(anchors=anchor_tokens,
                          topics=topic_summary,
