@@ -38,7 +38,9 @@ elif sys.argv[1]=='amazon':
 
 @ankura.util.pickle_cache(sys.argv[1] + '.pickle')
 def load_data():
-    split = ankura.pipeline.test_train_split(corpus, num_train=train_size, num_test=test_size, return_ids=True)
+    split = ankura.pipeline.test_train_split(corpus, return_ids=True)
+    (train_ids, train_corpus), (heldout_ids, heldout_corpus) = split
+    split = ankura.pipeline.test_train_split(train_corpus, num_train=train_size, num_test=test_size, return_ids=True)
     (train_ids, train_corpus), (test_ids, test_corpus) = split
 
     Q, labels = ankura.anchor.build_labeled_cooccurrence(corpus, attr_name, train_ids,
@@ -47,10 +49,10 @@ def load_data():
     gs_anchor_indices = ankura.anchor.gram_schmidt_anchors(corpus, Q, k=number_of_topics, return_indices=True)
     gs_anchor_vectors = Q[gs_anchor_indices]
     gs_anchor_tokens = [[corpus.vocabulary[index]] for index in gs_anchor_indices]
-    return Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens
+    return Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens, heldout_ids, heldout_corpus
 
 
-Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens = load_data()
+Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens, heldout_ids, heldout_corpus = load_data()
 
 
 @app.route('/')
