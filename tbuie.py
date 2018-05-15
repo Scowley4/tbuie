@@ -35,8 +35,7 @@ app = flask.Flask(__name__, static_url_path='')
 
 user_data = list()
 
-train_size = 10000
-test_size = 500
+dev_size = 500
 number_of_topics = 50
 label_weight = 1
 smoothing = 0
@@ -54,29 +53,50 @@ elif dataset_name == 'amazon':
     attr_name = 'binary_rating'
     corpus = ankura.corpus.amazon()
 
-def calculate_user_data_accuracy(user_data, Q, test_corpus, train_corpus, attr_name):
+def calculate_user_data_accuracy(user_data, Q, test_corpus, train_dev_corpus, attr_name):
     for i, data in enumerate(user_data):
         anchor_vectors = ankura.anchor.tandem_anchors(data[0], Q, corpus)
-        lr_accuracy = ankura.validate.anchor_accuracy(Q, anchor_vectors, test_corpus, train_corpus, attr_name)
+        lr_accuracy = ankura.validate.anchor_accuracy(Q, anchor_vectors, test_corpus, train_dev_corpus, attr_name)
         print('Instance', i, 'Free Classifier Accuracy:', data[1], 'Logistic Regression Accuracy:', lr_accuracy)
 
     return
 
 @ankura.util.pickle_cache(dataset_name + '.pickle')
 def load_data():
-    split = ankura.pipeline.test_train_split(corpus, num_train=train_size, num_test=test_size, return_ids=True)
-    (train_ids, train_corpus), (test_ids, test_corpus) = split
+    print('Splitting train/dev and test...')
+    # 80/20 split into test and train
+    split = ankura.pipeline.test_train_split(corpus, return_ids=True)
+    (train_dev_ids, train_dev_corpus), (test_ids, test_corpus) = split
+    train_dev_size = len(train_dev_ids)
+    print(f'  train/dev size: {train_dev_size}')
+    print(f'  test size: {len(test_ids)}')
 
-    Q, labels = ankura.anchor.build_labeled_cooccurrence(corpus, attr_name, train_ids,
+
+    train_size = train_dev_size - dev_size
+    print('Splitting train and dev...')
+    # Second split to give train and dev sets
+    split = ankura.pipeline.test_train_split(train_dev_corpus, num_train=train_size, num_test=dev_size, return_ids=True)
+    (train_ids, train_corpus), (dev_ids, dev_corpus) = split
+    print(f'  train size: {train_size}')
+    print(f'  dev size: {dev_size}')
+
+    Q, labels = ankura.anchor.build_labeled_cooccurrence(train_dev_corpus, attr_name,
+                                                        range(len(train_dev_corpus.documents)), # All are labeled
                                                         label_weight=label_weight, smoothing=smoothing)
 
-    gs_anchor_indices = ankura.anchor.gram_schmidt_anchors(corpus, Q, k=number_of_topics, return_indices=True)
+    gs_anchor_indices = ankura.anchor.gram_schmidt_anchors(train_dev_corpus, Q, k=number_of_topics, return_indices=True)
     gs_anchor_vectors = Q[gs_anchor_indices]
     gs_anchor_tokens = [[corpus.vocabulary[index]] for index in gs_anchor_indices]
-    return Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens
+    return (Q, labels, train_dev_ids, train_dev_corpus,
+            train_ids, train_corpus, dev_corpus, dev_ids,
+            test_ids, test_corpus, gs_anchor_vectors,
+            gs_anchor_indices, gs_anchor_tokens)
 
-
-Q, labels, train_ids, train_corpus, test_ids, test_corpus, gs_anchor_vectors, gs_anchor_indices, gs_anchor_tokens = load_data()
+# Load the data (will load from pickle if it can)
+(Q, labels, train_dev_ids, train_dev_corpus,
+    train_ids, train_corpus, dev_corpus, dev_ids,
+    test_ids, test_corpus, gs_anchor_vectors,
+    gs_anchor_indices, gs_anchor_tokens) = load_data()
 
 
 @app.route('/')
@@ -104,9 +124,6 @@ def finish():
                                                   dir=directory,
     ))
 
-    t = threading.Thread(target=calculate_user_data_accuracy, args=(user_data, Q, test_corpus, train_corpus, attr_name,))
-    t.start()
-
     return 'OK'
 
 @app.route('/topics')
@@ -118,7 +135,7 @@ def topic_request():
         anchor_tokens, anchor_vectors = gs_anchor_tokens, gs_anchor_vectors
     else:
         anchor_tokens = json.loads(raw_anchors)
-        anchor_vectors = ankura.anchor.tandem_anchors(anchor_tokens, Q, corpus)
+        anchor_vectors = ankura.anchor.tandem_anchors(anchor_tokens, Q, train_dev_corpus)
     print('***tadem_anchors:', time.time()-start)
 
     start=time.time()
@@ -127,25 +144,25 @@ def topic_request():
     print('***recover_topics:', time.time()-start)
 
     start=time.time()
-    topic_summary = ankura.topic.topic_summary(topics[:len(corpus.vocabulary)], corpus)
+    topic_summary = ankura.topic.topic_summary(topics[:len(train_dev_corpus.vocabulary)], train_dev_corpus)
     print('***topic_summary:', time.time()-start)
 
     start=time.time()
 
-    classifier = ankura.topic.free_classifier_dream(corpus, attr_name, labeled_docs=train_ids, topics=topics, C=C, labels=labels)
+    classifier = ankura.topic.free_classifier_dream(train_dev_corpus, attr_name, labeled_docs=train_ids, topics=topics, C=C, labels=labels)
     print('***Get Classifier:', time.time()-start)
 
     contingency = ankura.validate.Contingency()
 
     start=time.time()
-    for doc in test_corpus.documents:
+    for doc in dev_corpus.documents:
         gold = doc.metadata[attr_name]
         pred = classifier(doc)
         contingency[gold, pred] += 1
     print('***Classify:', time.time()-start)
     print('***Accuracy:', contingency.accuracy())
 
-    user_data.append((anchor_tokens, contingency.accuracy()))
+    user_data.append((anchor_vectors, contingency.accuracy()))
 
     return flask.jsonify(anchors=anchor_tokens,
                          topics=topic_summary,
