@@ -4,16 +4,22 @@ import scipy
 
 Z = 'z'
 
+# corpus_data was pickled as this tuple:
+#   (Q, labels, train_dev_ids, train_dev_corpus,
+#   train_ids, train_corpus, dev_corpus, dev_ids,
+#   test_ids, test_corpus, gs_anchor_vectors,
+#   gs_anchor_indices, gs_anchor_tokens)
+
 def get_logistic_regression_accuracy(unpickled_corpus_data, anchors, attribute_name='binary_rating'):
     Q = unpickled_corpus_data[0]
-    train_ids = unpickled_corpus_data[2]
+    train_ids = unpickled_corpus_data[2] # train_dev ids and corpus from tbuie
     train_corpus = unpickled_corpus_data[3]
-    test_ids = unpickled_corpus_data[-2] #This is the heldout data, not the test data used in tbuie.
-    test_corpus = unpickled_corpus_data[-1]
-    num_topics = len(unpickled_corpus_data[6]) #Index corresponds to the list of anchors
+    test_ids = unpickled_corpus_data[8] # This is the test data, not the dev data used in tbuie.
+    test_corpus = unpickled_corpus_data[9]
+    num_topics = len(anchors)
 
-    train_target = [doc.metadata[attribute_name] for doc in train_corpus.documents] 
-    test_target = [doc.metadata[attribute_name] for doc in test_corpus.documents] 
+    train_target = [doc.metadata[attribute_name] for doc in train_corpus.documents]
+    test_target = [doc.metadata[attribute_name] for doc in test_corpus.documents]
 
     topics = ankura.anchor.recover_topics(Q, anchors, 1e-5)
 
@@ -33,5 +39,5 @@ def get_logistic_regression_accuracy(unpickled_corpus_data, anchors, attribute_n
 
     lr = LogisticRegression()
     lr.fit(train_matrix, train_target)
-    
+
     return lr.score(test_matrix, test_target)
