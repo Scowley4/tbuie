@@ -55,11 +55,10 @@ elif dataset_name == 'amazon':
 
 def calculate_user_data_accuracy(user_data, Q, test_corpus, train_dev_corpus, attr_name):
     for i, data in enumerate(user_data):
-        anchor_vectors = ankura.anchor.tandem_anchors(data[0], Q, corpus)
+        anchor_tokens, anchor_vectors, accuracy = data
+        anchor_vectors = ankura.anchor.tandem_anchors(anchor_vectors, Q, corpus)
         lr_accuracy = ankura.validate.anchor_accuracy(Q, anchor_vectors, test_corpus, train_dev_corpus, attr_name)
-        print('Instance', i, 'Free Classifier Accuracy:', data[1], 'Logistic Regression Accuracy:', lr_accuracy)
-
-    return
+        print('Instance', i, 'Free Classifier Accuracy:', accuracy, 'Logistic Regression Accuracy:', lr_accuracy)
 
 @ankura.util.pickle_cache(dataset_name + '.pickle')
 def load_data():
@@ -87,6 +86,8 @@ def load_data():
     gs_anchor_indices = ankura.anchor.gram_schmidt_anchors(train_dev_corpus, Q, k=number_of_topics, return_indices=True)
     gs_anchor_vectors = Q[gs_anchor_indices]
     gs_anchor_tokens = [[corpus.vocabulary[index]] for index in gs_anchor_indices]
+
+    #This is memory inefficient, since we never use train_corpus.
     return (Q, labels, train_dev_ids, train_dev_corpus,
             train_ids, train_corpus, dev_corpus, dev_ids,
             test_ids, test_corpus, gs_anchor_vectors,
@@ -136,21 +137,21 @@ def topic_request():
     else:
         anchor_tokens = json.loads(raw_anchors)
         anchor_vectors = ankura.anchor.tandem_anchors(anchor_tokens, Q, train_dev_corpus)
-    print('***tadem_anchors:', time.time()-start)
+    print('***Time - tadem_anchors:', time.time()-start)
 
     start=time.time()
     C, topics = ankura.anchor.recover_topics(Q, anchor_vectors, epsilon=1e-5, get_c=True)
 
-    print('***recover_topics:', time.time()-start)
+    print('***Time - recover_topics:', time.time()-start)
 
     start=time.time()
     topic_summary = ankura.topic.topic_summary(topics[:len(train_dev_corpus.vocabulary)], train_dev_corpus)
-    print('***topic_summary:', time.time()-start)
+    print('***Time - topic_summary:', time.time()-start)
 
     start=time.time()
 
     classifier = ankura.topic.free_classifier_dream(train_dev_corpus, attr_name, labeled_docs=train_ids, topics=topics, C=C, labels=labels)
-    print('***Get Classifier:', time.time()-start)
+    print('***Time - Get Classifier:', time.time()-start)
 
     contingency = ankura.validate.Contingency()
 
@@ -159,10 +160,10 @@ def topic_request():
         gold = doc.metadata[attr_name]
         pred = classifier(doc)
         contingency[gold, pred] += 1
-    print('***Classify:', time.time()-start)
+    print('***Time - Classify:', time.time()-start)
     print('***Accuracy:', contingency.accuracy())
 
-    user_data.append((anchor_vectors, contingency.accuracy()))
+    user_data.append((anchor_tokens, anchor_vectors, contingency.accuracy()))
 
     return flask.jsonify(anchors=anchor_tokens,
                          topics=topic_summary,
