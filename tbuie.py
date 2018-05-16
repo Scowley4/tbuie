@@ -56,7 +56,6 @@ elif dataset_name == 'amazon':
 def calculate_user_data_accuracy(user_data, Q, test_corpus, train_dev_corpus, attr_name):
     for i, data in enumerate(user_data):
         anchor_tokens, anchor_vectors, accuracy = data
-        anchor_vectors = ankura.anchor.tandem_anchors(anchor_vectors, Q, corpus)
         lr_accuracy = ankura.validate.anchor_accuracy(Q, anchor_vectors, test_corpus, train_dev_corpus, attr_name)
         print('Instance', i, 'Free Classifier Accuracy:', accuracy, 'Logistic Regression Accuracy:', lr_accuracy)
 
@@ -137,7 +136,7 @@ def topic_request():
     else:
         anchor_tokens = json.loads(raw_anchors)
         anchor_vectors = ankura.anchor.tandem_anchors(anchor_tokens, Q, train_dev_corpus)
-    print('***Time - tadem_anchors:', time.time()-start)
+    print('***Time - tandem_anchors:', time.time()-start)
 
     start=time.time()
     C, topics = ankura.anchor.recover_topics(Q, anchor_vectors, epsilon=1e-5, get_c=True)
