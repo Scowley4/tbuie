@@ -137,7 +137,8 @@ def topic_request():
         anchor_tokens, anchor_vectors = gs_anchor_tokens, gs_anchor_vectors
     else:
         anchor_tokens = json.loads(raw_anchors)
-        anchor_vectors = ankura.anchor.tandem_anchors(anchor_tokens, Q, train_dev_corpus)
+        anchor_vectors = ankura.anchor.tandem_anchors(anchor_tokens, Q,
+                                                      train_dev_corpus, epsilon=1e-15)
     print('***Time - tandem_anchors:', time.time()-start)
 
     start=time.time()
