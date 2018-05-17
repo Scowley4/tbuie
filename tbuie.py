@@ -63,7 +63,7 @@ def calculate_user_data_accuracy(user_data, Q, test_corpus, train_dev_corpus, at
 def load_data():
     print('Splitting train/dev and test...')
     # 80/20 split into test and train
-    split = ankura.pipeline.test_train_split(corpus, return_ids=True)
+    split = ankura.pipeline.train_test_split(corpus, return_ids=True)
     (train_dev_ids, train_dev_corpus), (test_ids, test_corpus) = split
     train_dev_size = len(train_dev_ids)
     print(f'  train/dev size: {train_dev_size}')
@@ -73,7 +73,8 @@ def load_data():
     train_size = train_dev_size - dev_size
     print('Splitting train and dev...')
     # Second split to give train and dev sets
-    split = ankura.pipeline.test_train_split(train_dev_corpus, num_train=train_size, num_test=dev_size, return_ids=True)
+    split = ankura.pipeline.train_test_split(train_dev_corpus,
+    num_train=train_size, num_test=dev_size, remove_testonly_words=False, return_ids=True)
     (train_ids, train_corpus), (dev_ids, dev_corpus) = split
     print(f'  train size: {train_size}')
     print(f'  dev size: {dev_size}')
