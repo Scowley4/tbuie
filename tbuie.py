@@ -4,7 +4,7 @@ import json
 import flask
 import random
 import os
-import ankura 
+import ankura
 import time
 import pickle
 from tqdm import tqdm
@@ -73,8 +73,9 @@ def load_data():
     train_size = train_dev_size - dev_size
     print('Splitting train and dev...')
     # Second split to give train and dev sets
-    split = ankura.pipeline.train_test_split(train_dev_corpus,
-    num_train=train_size, num_test=dev_size, remove_testonly_words=False, return_ids=True)
+    split = ankura.pipeline.train_test_split(train_dev_corpus, num_train=train_size,
+                                            num_test=dev_size, remove_testonly_words=False,
+                                            return_ids=True)
     (train_ids, train_corpus), (dev_ids, dev_corpus) = split
     print(f'  train size: {train_size}')
     print(f'  dev size: {dev_size}')
