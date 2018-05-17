@@ -86,7 +86,7 @@ def load_data():
 
     gs_anchor_indices = ankura.anchor.gram_schmidt_anchors(train_dev_corpus, Q, k=number_of_topics, return_indices=True)
     gs_anchor_vectors = Q[gs_anchor_indices]
-    gs_anchor_tokens = [[corpus.vocabulary[index]] for index in gs_anchor_indices]
+    gs_anchor_tokens = [[train_dev_corpus.vocabulary[index]] for index in gs_anchor_indices]
 
     #This is memory inefficient, since we never use train_corpus.
     return (Q, labels, train_dev_ids, train_dev_corpus,
@@ -107,7 +107,7 @@ def serve_itm():
 
 @app.route('/vocab')
 def get_vocab():
-    return flask.jsonify(vocab=corpus.vocabulary)
+    return flask.jsonify(vocab=train_dev_corpus.vocabulary)
 
 
 @app.route('/finished', methods=['GET', 'POST'])
