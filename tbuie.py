@@ -39,6 +39,7 @@ dev_size = 500
 number_of_topics = 20
 label_weight = 1
 smoothing = 0
+prior_attr_name = 'lambda' #Attr for the prior probs (prob of each label)
 
 if dataset_name == 'newsgroups':
     attr_name = 'coarse_newsgroup'
@@ -152,7 +153,11 @@ def topic_request():
 
     start=time.time()
 
-    classifier = ankura.topic.free_classifier_dream(train_dev_corpus, attr_name, labeled_docs=train_ids, topics=topics, C=C, labels=labels)
+    classifier = ankura.topic.free_classifier_dream(train_dev_corpus, attr_name,
+                                                    labeled_docs=set(train_ids), topics=topics,
+                                                    C=C, labels=labels,
+                                                    prior_attr_name=prior_attr_name)
+
     print('***Time - Get Classifier:', time.time()-start)
 
     contingency = ankura.validate.Contingency()
