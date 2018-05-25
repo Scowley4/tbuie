@@ -1,6 +1,6 @@
 var app = angular.module('anchorApp', [])
 
-app.controller('anchorController', function($scope, $timeout, $http) {
+app.controller('anchorController', function($scope, $timeout, $http, $window) {
   var ctrl = this
 
   // Main data container for the app. Stores a list of anchor object.
@@ -109,17 +109,23 @@ app.controller('anchorController', function($scope, $timeout, $http) {
       $.get("/topics", {anchors: JSON.stringify(currentAnchors)}, function(data) {
         ctrl.anchors = getAnchorsArray(data["anchors"], data["topics"])
         ctrl.setAccuracy(data['accuracy'])
-        ctrl.loading = false
-        $scope.$apply()
         $(".top-to-bottom").css("height", $(".anchors-and-topics").height())
+      }).fail(function(){
+        $window.alert("Update Failed. Try Clicking Update Topics Again.")      
+      }).always(function(){
+        ctrl.loading = false
+        $scope.$apply()      
       })
     } else {
       $.get("/topics", function(data) {
         ctrl.anchors = getAnchorsArray(data["anchors"], data["topics"])
         ctrl.setAccuracy(data['accuracy'])
-        ctrl.loading = false
-        $scope.$apply()
         $(".top-to-bottom").css("height", $(".anchors-and-topics").height())
+      }).fail(function(){
+        $window.alert("Update Failed. Try Clicking Update Topics Again.")      
+      }).always(function(){
+        ctrl.loading = false
+        $scope.$apply()		      
       })
     }
   }

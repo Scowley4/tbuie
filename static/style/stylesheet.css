@@ -17,6 +17,7 @@ h4 {
     max-width: 100%;
     border: none;
     overflow: visible;
+    width:100%;
 }
 
 .anchorInput:focus {
