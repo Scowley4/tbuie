@@ -51,6 +51,9 @@
         <form id="addAnchorForm" ng-submit="ctrl.addAnchor()">
           <button type="submit" class="btn btn-success btn-sm">Add Topic</button>
         </form>
+        <form id="undoForm" class="unchanged" ng-submit="ctrl.undoAction()">
+          <button type="submit" class="btn btn-sm btn-warning">Undo to Previous Update</button>
+        </form>        
         <form id="updateForm" ng-submit="ctrl.getNewTopics()">
           <button type="submit" class="btn btn-primary btn-sm updateTopicsButtonClean">Update Topics</button>
         </form>
