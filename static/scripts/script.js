@@ -155,11 +155,14 @@ app.controller('anchorController', function($scope, $timeout, $http, $window) {
   ctrl.undoAction = function undoAction() {
   	 	if($('#undoForm.unchanged').length > 0){
 			lastModified = ctrl.anchorUndo.pop();
+			if(ctrl.anchorUndo.length < 1) {
+		     ctrl.anchorUndo.push(lastModified);							
+			}
   	 	}
   	 	if(ctrl.anchorUndo.length > 0) {
         lastModified = ctrl.anchorUndo.pop();
         ctrl.displayNewAnchors(lastModified);
-		  ctrl.anchorUndo.push(lastModified);
+		  ctrl.anchorUndo.push(lastModified);							
   	 	} 	 	
     	$('#undoForm').addClass('unchanged');
   };
