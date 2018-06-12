@@ -86,8 +86,8 @@ app.controller('anchorController', function($scope, $timeout, $http, $window) {
         angular.element(textForm.target).popover('hide')
       }, 2000);
     }
-    $('#undoForm').removeClass('unchanged');  
-    $('#undoForm button').prop('disabled',false);   
+    $('#undoForm').removeClass('unchanged');
+    $('#undoForm button').prop('disabled',false);
   }
 
   // Deletes a word from an existing anchor.
@@ -117,22 +117,22 @@ app.controller('anchorController', function($scope, $timeout, $http, $window) {
     ctrl.loading = true
     if (currentAnchors.length !== 0) {
       $.get("/topics", {anchors: JSON.stringify(currentAnchors)}, function(data) {
-  	     $('#undoForm').addClass('unchanged'); 
+        $('#undoForm').addClass('unchanged'); 
         ctrl.anchorUndo.push(data);
-		  ctrl.displayNewAnchors(data);
+        ctrl.displayNewAnchors(data);
       }).fail(function(){
-        $window.alert("Update Failed. Try Clicking Update Topics Again.");    
+        $window.alert("Update Failed. Try Clicking Update Topics Again.");
       }).always(function(){
         ctrl.loading = false;
         $scope.$apply();     
       });
     } else {
       $.get("/topics", function(data) {
-  	     $('#undoForm').addClass('unchanged');       	
+        $('#undoForm').addClass('unchanged');
         ctrl.anchorUndo.push(data);
         ctrl.displayNewAnchors(data);
       }).fail(function(){
-        $window.alert("Update Failed. Try Clicking Update Topics Again.");    
+        $window.alert("Update Failed. Try Clicking Update Topics Again.");
       }).always(function(){
         ctrl.loading = false;
         $scope.$apply();      
@@ -147,24 +147,24 @@ app.controller('anchorController', function($scope, $timeout, $http, $window) {
   };
   
   ctrl.displayNewAnchors = function displayNewAnchors(data) {
-	     ctrl.anchors = getAnchorsArray(data["anchors"], data["topics"]);
-        ctrl.setAccuracy(data['accuracy']);
-        $(".top-to-bottom").css("height", $(".anchors-and-topics").height());
+    ctrl.anchors = getAnchorsArray(data["anchors"], data["topics"]);
+    ctrl.setAccuracy(data['accuracy']);
+    $(".top-to-bottom").css("height", $(".anchors-and-topics").height());
   };
   
   ctrl.undoAction = function undoAction() {
-  	 	if($('#undoForm.unchanged').length > 0){
-			lastModified = ctrl.anchorUndo.pop();
-			if(ctrl.anchorUndo.length < 1) {
-		     ctrl.anchorUndo.push(lastModified);							
-			}
-  	 	}
-  	 	if(ctrl.anchorUndo.length > 0) {
-        lastModified = ctrl.anchorUndo.pop();
-        ctrl.displayNewAnchors(lastModified);
-		  ctrl.anchorUndo.push(lastModified);							
-  	 	} 	 	
-    	$('#undoForm').addClass('unchanged');
+    if($('#undoForm.unchanged').length > 0){
+      lastModified = ctrl.anchorUndo.pop();
+      if(ctrl.anchorUndo.length < 1) {
+        ctrl.anchorUndo.push(lastModified);
+      }
+    }
+    if(ctrl.anchorUndo.length > 0) {
+      lastModified = ctrl.anchorUndo.pop();
+      ctrl.displayNewAnchors(lastModified);
+      ctrl.anchorUndo.push(lastModified);
+    }
+    $('#undoForm').addClass('unchanged');
   };
 
 });
@@ -291,14 +291,14 @@ var drop = function(ev) {
     }
   }
   $('#undoForm').removeClass('unchanged');
-  $('#undoForm button').prop('disabled',false);  
+  $('#undoForm button').prop('disabled',false);
 };
 
 //used to delete words that are copies (because they can't access the function in the Angular scope)
 var deleteWord = function(ev) {
   $("#"+ev.target.id).parent()[0].remove();
   $('#undoForm').removeClass('unchanged');
-  $('#undoForm button').prop('disabled',false);   
+  $('#undoForm button').prop('disabled',false);
 };
 
 //Adds a delete button (little 'x' on the right side) of an anchor word
