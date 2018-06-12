@@ -6,9 +6,9 @@ app.controller('anchorController', function($scope, $timeout, $http, $window) {
   // Main data container for the app. Stores a list of anchor object.
   // Each anchor object includes anchors and an associated topic.
   ctrl.anchors = [];
-  
+
   ctrl.anchorUndo = [];
-  
+
   ctrl.anchorRedo = [];
 
   // Since finished toggles the thank you screen, done both sends the anchor
@@ -38,7 +38,7 @@ app.controller('anchorController', function($scope, $timeout, $http, $window) {
   // Removes an anchor from the anchors list.
   ctrl.removeAnchor = function(index) {
     ctrl.anchors.splice(index, 1);
-    $('#undoForm').removeClass('unchanged'); 
+    $('#undoForm').removeClass('unchanged');
     $('#undoForm button').prop('disabled',false);
   }
 
@@ -98,7 +98,7 @@ app.controller('anchorController', function($scope, $timeout, $http, $window) {
     if (wordIndex !== -1) {
       array.splice(wordIndex, 1);
     }
-    $('#undoForm').removeClass('unchanged'); 
+    $('#undoForm').removeClass('unchanged');
     $('#undoForm button').prop('disabled',false);
   }
 
@@ -117,14 +117,14 @@ app.controller('anchorController', function($scope, $timeout, $http, $window) {
     ctrl.loading = true
     if (currentAnchors.length !== 0) {
       $.get("/topics", {anchors: JSON.stringify(currentAnchors)}, function(data) {
-        $('#undoForm').addClass('unchanged'); 
+        $('#undoForm').addClass('unchanged');
         ctrl.anchorUndo.push(data);
         ctrl.displayNewAnchors(data);
       }).fail(function(){
         $window.alert("Update Failed. Try Clicking Update Topics Again.");
       }).always(function(){
         ctrl.loading = false;
-        $scope.$apply();     
+        $scope.$apply();
       });
     } else {
       $.get("/topics", function(data) {
@@ -135,7 +135,7 @@ app.controller('anchorController', function($scope, $timeout, $http, $window) {
         $window.alert("Update Failed. Try Clicking Update Topics Again.");
       }).always(function(){
         ctrl.loading = false;
-        $scope.$apply();      
+        $scope.$apply();
       })
     }
   }
@@ -145,13 +145,13 @@ app.controller('anchorController', function($scope, $timeout, $http, $window) {
     ctrl.classifierAccuracy = accuracy
     $('#accuracyHolder').text('Accuracy: ' + (accuracy*100).toFixed(2) + '%');
   };
-  
+
   ctrl.displayNewAnchors = function displayNewAnchors(data) {
     ctrl.anchors = getAnchorsArray(data["anchors"], data["topics"]);
     ctrl.setAccuracy(data['accuracy']);
     $(".top-to-bottom").css("height", $(".anchors-and-topics").height());
   };
-  
+
   ctrl.undoAction = function undoAction() {
     if($('#undoForm.unchanged').length > 0){
       lastModified = ctrl.anchorUndo.pop();
