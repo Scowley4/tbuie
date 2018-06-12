@@ -35,7 +35,7 @@ app = flask.Flask(__name__, static_url_path='')
 
 user_data = list()
 
-dev_size = 500
+dev_size = 2500
 number_of_topics = 20
 label_weight = 1
 smoothing = 0
