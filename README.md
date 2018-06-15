@@ -1,7 +1,7 @@
 # TBUIE
 
 This is demo of the interactive topic modeling capabilities of
-[ankura2](https://github.com/byu-aml-lab/ankura/tree/ankura2).
+[ankura](https://github.com/byu-aml-lab/ankura).
 
 On the name: I'm not a front end guy. I don't have a clue what I'm doing here.
 This started out as a text box where you entered in raw json into a text box
