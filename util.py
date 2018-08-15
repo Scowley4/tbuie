@@ -365,7 +365,23 @@ def get_average_improvement(dataset_name, user_data):
     print('Average test improvement', fc_test_improvement)
 
 
-def plot_all_users_data(dataset_name, user_data):
+def get_processed_data():
+    """Gets the input for the paper to be used in the plot_all_users_data
+    function"""
+    folder = 'data/emnlp2018_userstudy/'
+    data = []
+    for filename in os.listdir(folder):
+        if filename.startswith('processed'):
+            with open(os.path.join(folder,filename), 'rb') as infile:
+                data += pickle.load(infile)
+    return {'amazon':data}
+
+def get_emnlp_user_study():
+    with open('data/data_for_EMNLP_user_study.pickle', 'rb') as infile:
+        data = pickle.load(infile)
+    return data
+
+def plot_all_users_data(dataset_name, user_data, outfile_name='user_data.pdf'):
     dataset_data = user_data[dataset_name]
     #fig, (ax1, ax2, ax3) = plt.subplots(3, figsize=(10,15))
     fig, ax1 = plt.subplots(figsize=(15,10))
@@ -398,7 +414,7 @@ def plot_all_users_data(dataset_name, user_data):
                    ylim=ylim, xtext='Development Set Accuracy', ytext='Test Set Accuracy')
     #ax1.set_title(dataset_name, fontsize='30')
     ax1.tick_params(labelsize=30)
-    plt.savefig('user_data.pdf', format='pdf')
+    plt.savefig(outfile_name, format='pdf')
     plt.show()
 
     return ax1
